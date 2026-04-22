@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Pro POS | Advanced Payments</title>
+    <style>
+        :root {
+            --bg: #f4f4f4;
+            --card-bg: white;
+            --text: #333;
+            --primary: #fc8019;
+            --shadow: rgba(0, 0, 0, 0.1);
+            --border: #ddd;
+            --veg: #27ae60;
+            --nonveg: #c0392b;
+        }
+
+        [data-theme="dark"] {
+            --bg: #121212;
+            --card-bg: #1e1e1e;
+            --text: #e0e0e0;
+            --shadow: rgba(0, 0, 0, 0.5);
+            --border: #333;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            transition: 0.3s;
+            padding-bottom: 50px;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            background: var(--primary);
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .controls-container {
+            background: var(--card-bg);
+            padding: 20px;
+            margin: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px var(--shadow);
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            margin-bottom: 15px;
+            font-size: 16px;
+            background: var(--card-bg);
+            color: var(--text);
+            box-sizing: border-box;
+        }
+
+        .controls-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .diet-toggle {
+            display: flex;
+            background: var(--bg);
+            padding: 4px;
+            border-radius: 30px;
+            border: 1px solid var(--border);
+        }
+
+        .diet-btn {
+            border: none;
+            background: transparent;
+            padding: 6px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 12px;
+            color: #888;
+            transition: 0.3s;
+        }
+
+        .diet-btn.active.all { background: #555; color: white; }
+        .diet-btn.active.v { background: var(--veg); color: white; }
+        .diet-btn.active.nv { background: var(--nonveg); color: white; }
+
+        .filter-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 18px;
+            border-radius: 20px;
+            border: 1px solid var(--primary);
+            background: transparent;
+            color: var(--primary);
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .filter-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .container {
+            display: flex;
+            gap: 20px;
+            padding: 0 20px;
+            align-items: flex-start;
+        }
+
+        .menu {
+            width: 60%;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .cat-header {
+            grid-column: 1 / -1;
+            background: var(--primary);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 8px;
+            margin: 20px 0 10px 0;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            font-weight: bold;
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            overflow: hidden;
+            text-align: center;
+            box-shadow: 0 4px 10px var(--shadow);
+            transition: 0.3s;
+            border: 1px solid transparent;
+            position: relative;
+        }
+
+        .diet-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 16px;
+            height: 16px;
+            background: white;
+            border: 2px solid;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 5;
+        }
+        .diet-indicator::after {
+            content: "";
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        .is-veg { border-color: var(--veg); }
+        .is-veg::after { background: var(--veg); }
+        .is-nv { border-color: var(--nonveg); }
+        .is-nv::after { background: var(--nonveg); }
+
+        .card img {
+            width: 100%;
+            height: 130px;
+            object-fit: cover;
+            display: block;
+            background: #eee;
+        }
+
+        .card-info {
+            padding: 12px;
+        }
+
+        .card .price {
+            color: var(--primary);
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .qty-box {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            background: var(--bg);
+            border-radius: 8px;
+            padding: 5px;
+        }
+
+        .qty-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .checkout {
+            width: 40%;
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px var(--shadow);
+            position: sticky;
+            top: 100px;
+        }
+
+        .pay-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+            margin: 15px 0;
+        }
+
+        .pay-opt {
+            border: 2px solid var(--border);
+            padding: 10px;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            background: var(--bg);
+            font-size: 12px;
+        }
+
+        .pay-opt img {
+            width: 20px;
+            margin-bottom: 3px;
+        }
+
+        .pay-opt.selected {
+            border-color: var(--primary);
+            background: #fff5e6;
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        .payment-details {
+            display: none;
+            margin-top: 10px;
+            padding: 10px;
+            background: var(--bg);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .payment-details input,
+        .cust-input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .bill-content {
+            background: white;
+            color: #111;
+            padding: 25px;
+            border-radius: 8px;
+            width: 340px;
+            max-height: 90vh;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+        }
+
+        .stars {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 15px 0;
+            font-size: 30px;
+            cursor: pointer;
+        }
+
+        .star {
+            color: #ccc;
+            transition: 0.2s;
+        }
+
+        .star.selected {
+            color: #f1c40f;
+        }
+
+        .history-container {
+            margin: 20px;
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px var(--shadow);
+        }
+
+        .history-item {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr 0.5fr;
+            padding: 10px;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+        }
+
+        .confirm-btn {
+            width: 100%;
+            padding: 15px;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+            font-size: 16px;
+        }
+
+        .clear-search-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        small {
+            display: block;
+            margin-top: 2px;
+            font-size: 10px;
+            color: #777;
+        }
+
+        .not-found-card {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 40px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 2px dashed #ccc;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="top-bar">
+        <h2 style="margin:0">🍽️ Smart POS Pro</h2>
+        <div style="display:flex; gap:10px;">
+            <button onclick="showSalesReport()"
+                style="background:#3498db; color:white; border:none; padding:8px 15px; border-radius:5px; cursor:pointer; font-weight:bold;">📊
+                Sales Report</button>
+            <button onclick="toggleTheme()"
+                style="background:#333; color:white; border:none; padding:8px 15px; border-radius:5px; cursor:pointer;">🌓
+                Mode</button>
+        </div>
+    </div>
+
+    <div class="controls-container">
+        <input type="text" id="searchBar" class="search-box" placeholder="Search menu (try 'ice cream')..." onkeyup="filterMenu()">
+        <div class="controls-row">
+            <div class="filter-group">
+                <button class="filter-btn active" id="btn-All" onclick="scrollToCat('All', this)">All Items</button>
+                <button class="filter-btn" id="btn-Starters" onclick="scrollToCat('Starters', this)">Starters</button>
+                <button class="filter-btn" id="btn-Main Course" onclick="scrollToCat('Main Course', this)">Main Course</button>
+                <button class="filter-btn" id="btn-Beverages" onclick="scrollToCat('Beverages', this)">Beverages</button>
+                <button class="filter-btn" id="btn-Desserts" onclick="scrollToCat('Desserts', this)">Desserts</button>
+            </div>
+            
+            <div class="diet-toggle">
+                <button class="diet-btn all active" onclick="setDietFilter('all', this)">All</button>
+                <button class="diet-btn v" onclick="setDietFilter('veg', this)">Veg Only</button>
+                <button class="diet-btn nv" onclick="setDietFilter('nv', this)">Non-Veg</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="menu" id="menuScroll">
+            <div class="menu-grid" id="menuDisplay"></div>
+        </div>
+
+        <div class="checkout">
+            <select id="serviceType" onchange="toggleAddressFields()"
+                style="width:100%; padding:10px; border-radius:8px; margin-bottom:15px; background:var(--bg); color:var(--text); border:none; font-weight:bold;">
+                <option value="Dine In">🏠 Dine In</option>
+                <option value="Takeaway">🥡 Takeaway</option>
+            </select>
+            <h3 style="margin:0">🛒 Cart</h3>
+            <div id="cartList"
+                style="margin:10px 0; max-height: 150px; overflow-y: auto; border-bottom: 1px dashed #ccc;"></div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+                <span>Total:</span>
+                <b style="color:var(--primary); font-size:22px;">₹<span id="totalPrice">0</span></b>
+            </div>
+
+            <div class="pay-grid">
+                <div class="pay-opt selected" onclick="selectPayment('Cash', this)"><img
+                        src="https://cdn-icons-png.flaticon.com/512/2331/2331717.png" alt="Cash"><br>Cash</div>
+                <div class="pay-opt" onclick="selectPayment('UPI', this)"><img
+                        src="https://cdn-icons-png.flaticon.com/512/10110/10110406.png" alt="UPI"><br>UPI</div>
+                <div class="pay-opt" onclick="selectPayment('Card', this)"><img
+                        src="https://cdn-icons-png.flaticon.com/512/633/633611.png" alt="Card"><br>Card</div>
+            </div>
+
+            <div id="cardInputs" class="payment-details">
+                <input type="text" id="cardNum" placeholder="Card Number (Last 4 digits)" maxlength="4"
+                    oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                <input type="text" id="cardHolder" placeholder="Cardholder Name">
+            </div>
+            <div id="upiInputs" class="payment-details">
+                <input type="text" id="upiId" placeholder="Transaction ID or UPI ID">
+            </div>
+
+            <button class="confirm-btn" onclick="openCustomerModal()">Place Order</button>
+        </div>
+    </div>
+
+    <div class="modal" id="customerModal">
+        <div class="bill-content" style="font-family: 'Segoe UI', sans-serif;">
+            <h2 style="text-align:center; margin-top:0;">👤 Customer Info</h2>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <label>Name <small>(Max 20 chars)</small></label>
+                <input type="text" id="custName" class="cust-input" placeholder="Enter name" maxlength="20">
+
+                <label>Mobile <small>(Exactly 10 digits)</small></label>
+                <input type="text" id="custPhone" class="cust-input" placeholder="9876543210" maxlength="10"
+                    oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+
+                <div id="addressSection" style="display:none;">
+                    <label>Address</label>
+                    <input type="text" id="custAddress" class="cust-input" placeholder="Full address">
+
+                    <label>Pincode <small>(Exactly 6 digits)</small></label>
+                    <input type="text" id="custPincode" class="cust-input" placeholder="600001" maxlength="6"
+                        oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                </div>
+            </div>
+            <button class="confirm-btn" onclick="submitOrder()">Finalize & Generate Bill</button>
+            <button onclick="document.getElementById('customerModal').style.display='none'"
+                style="width: 100%; background: none; border: none; color: #888; margin-top: 10px; cursor: pointer;">Go
+                Back</button>
+        </div>
+    </div>
+
+    <div class="history-container">
+        <h3 style="display:flex; justify-content:space-between;"><span>📜 History</span><span id="salesCounter"
+                style="font-size:12px;">0 Orders Today</span></h3>
+        <div id="historyList"></div>
+    </div>
+
+    <div class="modal" id="billModal">
+        <div class="bill-content">
+            <h2 style="text-align:center; margin:0;">RECEIPT</h2>
+            <p id="billType" style="text-align:center; font-size:12px;"></p>
+            <hr>
+            <div id="billCustomerInfo" style="font-size: 13px; margin-bottom: 10px;"></div>
+            <hr>
+            <div id="billItems"></div>
+            <hr>
+            <div id="billPricing"></div>
+            <p id="billPayMethod" style="font-weight:bold; font-size:14px; margin-bottom:5px;"></p>
+            <p id="billPayDetail" style="font-size:12px; color:#555; margin:0;"></p>
+            <button onclick="closeModal()"
+                style="width:100%; margin-top:15px; padding:12px; background:#222; color:white; border:none; cursor:pointer; border-radius:5px;">New
+                Order</button>
+        </div>
+    </div>
+
+    <div class="modal" id="feedbackModal">
+        <div class="bill-content" style="text-align:center;">
+            <h2>Rate your experience</h2>
+            <div class="stars" id="starContainer">
+                <span class="star" onclick="setRating(1)">★</span>
+                <span class="star" onclick="setRating(2)">★</span>
+                <span class="star" onclick="setRating(3)">★</span>
+                <span class="star" onclick="setRating(4)">★</span>
+                <span class="star" onclick="setRating(5)">★</span>
+            </div>
+            <button onclick="submitFeedback()" class="confirm-btn">Submit Feedback</button>
+        </div>
+    </div>
+
+    <div class="modal" id="reportModal">
+        <div class="bill-content" style="width:340px;">
+            <h2 style="text-align:center;">📊 Sales Report</h2>
+            <hr>
+            <div id="reportStats" style="line-height: 2;"></div>
+            <button onclick="document.getElementById('reportModal').style.display='none'"
+                style="width:100%; margin-top:15px; padding:10px; background:var(--primary); color:white; border:none; cursor:pointer;">Close</button>
+        </div>
+    </div>
+
+    <audio id="buzzer" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
+
+    <script>
+        const items = [
+            { name: "Paneer Tikka", price: 150, cat: "Starters", type: 0, tags: "starter, paneer, veg", img: "https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?w=400" },
+            { name: "Chili Potato", price: 130, cat: "Starters", type: 0, tags: "starter, potato, veg", img: "https://images.unsplash.com/photo-1626132647523-66f5bf380027?w=400" },
+            { name: "Chicken 65", price: 220, cat: "Starters", type: 1, tags: "starter, chicken, non veg, meat, spicy", img: "https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?w=400" },
+            { name: "Fish Amritsari", price: 280, cat: "Starters", type: 1, tags: "starter, fish, non veg, meat, seafood", img: "https://www.chefkunalkapur.com/wp-content/uploads/2021/03/amritsari-fried-fish-scaled-e1621348565229-1300x915.jpeg?v=1618226070"},
+            
+            { name: "Chicken Biryani", price: 250, cat: "Main Course", type: 1, tags: "chicken, rice, non veg", img: "https://ministryofcurry.com/wp-content/uploads/2024/06/chicken-biryani-5.jpg" },
+            { name: "Veg Biryani", price: 180, cat: "Main Course", type: 0, tags: "veg, rice", img: "https://www.cookingcarnival.com/wp-content/uploads/2025/09/Vegetable-Dum-Biryani-5.jpg" },
+            { name: "Butter Naan", price: 50, cat: "Main Course", type: 0, tags: "bread, roti", img: "https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=400" },
+            { name: "Dal Makhani", price: 190, cat: "Main Course", type: 0, tags: "dal, curry", img: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400" },
+            { name: "Cheesy Pizza", price: 300, cat: "Main Course", type: 0, tags: "pizza, cheese", img: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400" },
+            
+            { name: "Iced Tea", price: 80, cat: "Beverages", type: 0, tags: "cool drinks, drink, soft drink", img: "https://images.unsplash.com/photo-1499638673689-79a0b5115d87?w=400" },
+            { name: "Coca Cola", price: 40, cat: "Beverages", type: 0, tags: "cool drinks, soda, coke, soft drink", img: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=400" },
+            { name: "Diet Coke", price: 40, cat: "Beverages", type: 0, tags: "cool drinks, soda, soft drink", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTTH47i7LZHRBPnhKw56EpnVJuJ6jpv8Qplkg&s" },
+            { name: "Monster Ultra", price: 130, cat: "Beverages", type: 0, tags: "cool drinks, soda, soft drink", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ3sJn8_NcRuIkDvycK2BpMbMw2n6z3PKckBw&s" },
+
+            // NEW: Desserts Section
+            { name: "Chocolate Cake Bowl", price: 140, cat: "Desserts", type: 0, tags: "sweet, cake, chocolate, dessert", img: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400" },
+            { name: "Vanilla Sundae", price: 90, cat: "Desserts", type: 0, tags: "ice cream, cold, sweet, vanilla", img: "https://images.stockcake.com/public/9/5/b/95b35c4b-ed3e-43bc-ab91-29903c80de40_large/delicious-ice-cream-stockcake.jpg" },
+            { name: "Strawberry Blast", price: 110, cat: "Desserts", type: 0, tags: "ice cream, strawberry, dessert", img: "https://images.unsplash.com/photo-1589119908995-c6837fa14848?w=400" }
+        ];
+
+        let cart = {}, payMethod = "Cash", history = [], tempRating = 0, currentDiet = 'all';
+
+        function toggleTheme() {
+            document.body.hasAttribute('data-theme') ? document.body.removeAttribute('data-theme') : document.body.setAttribute('data-theme', 'dark');
+        }
+
+        function setDietFilter(diet, btn) {
+            currentDiet = diet;
+            document.querySelectorAll('.diet-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            filterMenu();
+        }
+
+        function selectPayment(method, el) {
+            payMethod = method;
+            document.querySelectorAll('.pay-opt').forEach(o => o.classList.remove('selected'));
+            el.classList.add('selected');
+            document.getElementById('cardInputs').style.display = (method === 'Card') ? 'block' : 'none';
+            document.getElementById('upiInputs').style.display = (method === 'UPI') ? 'block' : 'none';
+        }
+
+        function toggleAddressFields() {
+            const type = document.getElementById("serviceType").value;
+            document.getElementById("addressSection").style.display = (type === "Takeaway") ? "block" : "none";
+        }
+
+        function filterMenu() {
+            const query = document.getElementById("searchBar").value.toLowerCase();
+            const display = document.getElementById("menuDisplay");
+            display.innerHTML = "";
+            const categories = ["Starters", "Main Course", "Beverages", "Desserts"];
+            let itemsFound = 0;
+
+            categories.forEach(cat => {
+                const filtered = items.filter(i => {
+                    const matchesSearch = i.name.toLowerCase().includes(query) || i.tags.toLowerCase().includes(query);
+                    const matchesDiet = (currentDiet === 'all') || 
+                                      (currentDiet === 'veg' && i.type === 0) || 
+                                      (currentDiet === 'nv' && i.type === 1);
+                    return i.cat === cat && matchesSearch && matchesDiet;
+                });
+
+                if (filtered.length > 0) {
+                    itemsFound += filtered.length;
+                    display.innerHTML += `<div class="cat-header" id="cat-${cat}">${cat}</div>`;
+                    filtered.forEach(i => {
+                        let q = cart[i.name]?.q || 0;
+                        display.innerHTML += `
+                        <div class="card">
+                            <div class="diet-indicator ${i.type === 0 ? 'is-veg' : 'is-nv'}"></div>
+                            <img src="${i.img}" alt="${i.name}">
+                            <div class="card-info">
+                                <h5>${i.name}</h5>
+                                <p class="price">₹${i.price}</p>
+                                <div class="qty-box">
+                                    <button class="qty-btn" onclick="updateCart('${i.name}',${i.price},-1)">-</button>
+                                    <span style="font-weight:bold">${q}</span>
+                                    <button class="qty-btn" onclick="updateCart('${i.name}',${i.price},1)">+</button>
+                                </div>
+                            </div>
+                        </div>`;
+                    });
+                }
+            });
+
+            if (itemsFound === 0 && (query !== "" || currentDiet !== 'all')) {
+                display.innerHTML = `
+                <div class="not-found-card">
+                    <img src="https://cdn-icons-png.flaticon.com/512/6134/6134065.png" style="width: 60px; opacity: 0.4; margin-bottom:10px;">
+                    <h3 style="color: #888; margin:0;">No Items Matching</h3>
+                    <p style="font-size: 13px; color: #aaa;">Try changing your filters.</p>
+                    <button class="clear-search-btn" onclick="clearSearch()">Reset All</button>
+                </div>`;
+            }
+        }
+
+        function clearSearch() {
+            document.getElementById("searchBar").value = "";
+            currentDiet = 'all';
+            document.querySelectorAll('.diet-btn').forEach(b => b.classList.remove('active'));
+            document.querySelector('.diet-btn.all').classList.add('active');
+            filterMenu();
+        }
+
+        function updateCart(name, price, change) {
+            if (!cart[name]) cart[name] = { p: price, q: 0 };
+            cart[name].q += change;
+            if (cart[name].q <= 0) delete cart[name];
+            renderCart();
+            filterMenu();
+        }
+
+        function renderCart() {
+            const list = document.getElementById("cartList");
+            let total = 0; list.innerHTML = "";
+            for (let k in cart) {
+                total += cart[k].p * cart[k].q;
+                list.innerHTML += `<div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:5px"><span>${k} x${cart[k].q}</span><span>₹${cart[k].p * cart[k].q}</span></div>`;
+            }
+            document.getElementById("totalPrice").innerText = total;
+        }
+
+        function openCustomerModal() {
+            if (Object.keys(cart).length === 0) return alert("Cart empty!");
+            if (payMethod === 'Card' && document.getElementById('cardNum').value.length !== 4) return alert("Enter exactly 4 digits of card number");
+            if (payMethod === 'UPI' && !document.getElementById('upiId').value) return alert("Enter UPI Transaction ID");
+            toggleAddressFields();
+            document.getElementById("customerModal").style.display = "flex";
+        }
+
+        function submitOrder() {
+            const name = document.getElementById("custName").value.trim();
+            const phone = document.getElementById("custPhone").value;
+            const type = document.getElementById("serviceType").value;
+            const pincode = document.getElementById("custPincode").value;
+
+            if (!name) return alert("Please enter customer name");
+            if (name.length > 20) return alert("Name cannot exceed 20 characters");
+            if (phone.length !== 10) return alert("Mobile number must be exactly 10 digits");
+
+            if (type === "Takeaway") {
+                if (!document.getElementById("custAddress").value.trim()) return alert("Address required for takeaway");
+                if (pincode.length !== 6) return alert("Pincode must be exactly 6 digits");
+            }
+
+            generateBill(name, phone);
+            document.getElementById("customerModal").style.display = "none";
+        }
+
+        function generateBill(custName, custPhone) {
+            document.getElementById("buzzer").play();
+            const total = document.getElementById("totalPrice").innerText;
+            const type = document.getElementById("serviceType").value;
+            const tableNum = (type === "Dine In") ? Math.floor(Math.random() * 15) + 1 : null;
+
+            const custInfoDiv = document.getElementById("billCustomerInfo");
+            custInfoDiv.innerHTML = `
+                <b>Customer:</b> ${custName}<br>
+                <b>Phone:</b> ${custPhone}<br>
+                ${tableNum ? `<b style="color:#e67e22; font-size:16px;">TABLE: ${tableNum}</b>` : `<b>Addr:</b> ${document.getElementById("custAddress").value} (${document.getElementById("custPincode").value})`}
+            `;
+
+            const bItems = document.getElementById("billItems");
+            bItems.innerHTML = "";
+            for (let k in cart) bItems.innerHTML += `<div style="display:flex; justify-content:space-between;"><span>${k} x${cart[k].q}</span><span>₹${cart[k].p * cart[k].q}</span></div>`;
+
+            document.getElementById("billPricing").innerHTML = `<h3>TOTAL: ₹${total}</h3>`;
+            document.getElementById("billType").innerText = `${type} | ${new Date().toLocaleTimeString()}`;
+            document.getElementById("billPayMethod").innerText = `Payment: ${payMethod}`;
+
+            let paymentDetail = "";
+            if (payMethod === 'Card') paymentDetail = "Card: ****" + document.getElementById('cardNum').value;
+            if (payMethod === 'UPI') paymentDetail = "UPI ID: " + document.getElementById('upiId').value;
+            document.getElementById("billPayDetail").innerText = paymentDetail;
+
+            history.unshift({
+                type: type,
+                pay: payMethod,
+                total: parseFloat(total),
+                time: new Date().toLocaleTimeString(),
+                rating: 0
+            });
+
+            document.getElementById("billModal").style.display = "flex";
+        }
+
+        function setRating(val) {
+            tempRating = val;
+            document.querySelectorAll('.star').forEach((s, i) => s.classList.toggle('selected', i < val));
+        }
+
+        function submitFeedback() {
+            if (tempRating === 0) return alert("Please select a rating!");
+            history[0].rating = tempRating;
+            updateHistory();
+            document.getElementById("feedbackModal").style.display = "none";
+            tempRating = 0;
+            document.querySelectorAll('.star').forEach(s => s.classList.remove('selected'));
+        }
+
+        function updateHistory() {
+            const hList = document.getElementById("historyList");
+            document.getElementById("salesCounter").innerText = `${history.length} Orders Today`;
+            hList.innerHTML = history.slice(0, 5).map(h => `
+            <div class="history-item">
+                <span>${h.type}</span>
+                <span>${h.pay}</span>
+                <span>${h.time}</span>
+                <b>₹${h.total}</b>
+                <span style="color:#f1c40f">${h.rating > 0 ? '★'.repeat(h.rating) : '-'}</span>
+            </div>`).join('');
+        }
+
+        function showSalesReport() {
+            let stats = { Cash: 0, UPI: 0, Card: 0, Total: 0 };
+            history.forEach(h => { stats[h.pay] += h.total; stats.Total += h.total; });
+            document.getElementById("reportStats").innerHTML = `
+            <p>💵 Cash: <b>₹${stats.Cash}</b></p>
+            <p>📱 UPI: <b>₹${stats.UPI}</b></p>
+            <p>💳 Card: <b>₹${stats.Card}</b></p>
+            <hr><h3 style="color:#27ae60">Revenue: ₹${stats.Total}</h3>`;
+            document.getElementById("reportModal").style.display = "flex";
+        }
+
+        function closeModal() {
+            document.getElementById("billModal").style.display = "none";
+            document.getElementById("feedbackModal").style.display = "flex";
+            document.getElementById("cardNum").value = "";
+            document.getElementById("upiId").value = "";
+            document.getElementById("custName").value = "";
+            document.getElementById("custPhone").value = "";
+            document.getElementById("custAddress").value = "";
+            document.getElementById("custPincode").value = "";
+            cart = {}; renderCart(); clearSearch();
+        }
+
+        function scrollToCat(cat, btn) {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            if (cat !== 'All') {
+                const el = document.getElementById('cat-' + cat);
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+                document.getElementById('menuScroll').scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        window.onload = filterMenu;
+    </script>
+</body>
+
+</html>
